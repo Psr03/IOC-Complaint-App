@@ -1,52 +1,216 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IOC Complaint App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
-  <div class="app-container">
-    <header>
-      <h1>IOC Complaint System</h1>
-    </header>
-    
-    <main>
-      <!-- Naya Complaint Form -->
-      <div class="card" id="form-card">
-        <h2>Add New Complaint</h2>
-        <form id="complaintForm">
-          <div class="form-group">
-            <label>Retail Outlet Name *</label>
-            <input type="text" id="outletName" required>
-          </div>
-          <div class="form-group">
-            <label>DU Complent Detail *</label>
-            <textarea id="complaintDetail" rows="3" required></textarea>
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select id="status">
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-            </select>
-          </div>
-          <button type="submit" class="btn-primary">Submit Complaint</button>
-        </form>
-      </div>
+<div class="app-layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">IOC</div>
+      <h5>Complent System</h5>
+    </div>
+    <div class="sidebar-menu">
+      <div class="sidebar-link active" onclick="switchSection('dashboard', 'Dashboard Overview', this)"><i class="bi bi-speedometer2"></i> Dashboard</div>
+      <div class="sidebar-link" onclick="switchSection('dealers', 'Dealers Directory', this)"><i class="bi bi-people-fill"></i> Dealers</div>
+      <div class="sidebar-link" onclick="switchSection('list', 'All Complaints', this)"><i class="bi bi-list-ul"></i> Complaints</div>
+      
+      <div class="sidebar-link" onclick="toggleSubMenu(this)"><i class="bi bi-plus-circle"></i> New Entry <i class="bi bi-chevron-down float-end mt-1"></i></div>
+      <div class="sidebar-submenu" id="newEntrySubmenu">
+        <div class="sidebar-link" onclick="switchSection('dealerForm', 'Add New Dealer', this)"><i class="bi bi-person-plus-fill"></i> Add Dealer</div>
+        <div class="sidebar-link" onclick="switchSection('form', 'New Complaint Entry', this)"><i class="bi bi-chat-left-text"></i> Add Complent</div>        
+      </div>  
 
-      <!-- Complaints List -->
-      <div class="card">
-        <h2>Recent Complaints</h2>
-        <div id="complaint-list">Loading complaints...</div>
-      </div>
-    </main>
+      <div class="sidebar-link" onclick="window.open('https://www.google.com/maps/d/viewer?mid=1o4Xtey2zEa8kY0KuVqlcEfsBLokQvKY', '_blank')">
+        <i class="bi bi-map-fill"></i> Open Full Map
+      </div>    
+    </div>
   </div>
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-  <script src="script.js"></script>
+  <div class="main-content">
+    <div class="top-navbar">
+      <div class="d-flex align-items-center">
+        <button class="btn-toggle-sidebar" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+        <span class="navbar-title" id="pageTitle">Dashboard Overview</span>
+      </div>
+      <div class="nav-actions">
+        <div class="btn-icon" onclick="toggleDarkMode()" title="Toggle Theme" id="darkModeBtn"><i class="bi bi-moon-stars-fill"></i></div>
+        <div class="btn-icon" onclick="refreshAllData()" title="Refresh"><i class="bi bi-arrow-clockwise"></i></div>
+      </div>
+    </div>
+
+    <div class="content-area">
+      
+      <div class="section-panel active" id="sectionDashboard">
+        <div class="dash-header"><div><h5 class="mb-0">Overview</h5><small class="text-muted" id="dashLastUpdated">Loading...</small></div><button class="btn btn-ioc-primary btn-sm" onclick="loadDashboard()"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div>
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="d-flex align-items-center gap-3"><div class="stat-icon" style="background:var(--g1)"><i class="bi bi-clipboard-data"></i></div><div><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Complaints</div><div class="stat-change" id="statWeekInfo"></div></div></div><div class="stat-ring" style="background:#667eea"></div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="d-flex align-items-center gap-3"><div class="stat-icon" style="background:var(--g2)"><i class="bi bi-calendar-check"></i></div><div><div class="stat-value" id="statToday">0</div><div class="stat-label">Today's New</div><div class="stat-change" id="statTodayChange"></div></div></div><div class="stat-ring" style="background:#f093fb"></div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="d-flex align-items-center gap-3"><div class="stat-icon" style="background:var(--g5)"><i class="bi bi-exclamation-triangle"></i></div><div><div class="stat-value" id="statActive">0</div><div class="stat-label">Active</div><div class="stat-change" id="statResolvedInfo"></div></div></div><div class="stat-ring" style="background:#fa709a"></div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="d-flex align-items-center gap-3"><div class="stat-icon" style="background:var(--g4)"><i class="bi bi-shop"></i></div><div><div class="stat-value" id="statOutlets">0</div><div class="stat-label">Unique Outlets</div></div></div><div class="stat-ring" style="background:#43e97b"></div></div></div>
+        </div>
+
+        <div class="row g-3">
+        <div class="col-12">
+          <div class="chart-card" style="height: calc(100vh - 240px); min-height: 400px; display: flex; flex-direction: column;">
+            <h6 class="mb-2 fw-bold" style="flex-shrink: 0;"><i class="bi bi-geo-alt-fill"></i> All Outlets Map</h6>
+            <iframe id="outletMap" class="dynamic-map-iframe" style="width:100%; flex-grow: 1; min-height: 350px; border:0; border-radius:12px; overflow:hidden;" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps/d/embed?mid=1o4Xtey2zEa8kY0KuVqlcEfsBLokQvKY&ehbc=2E312F"></iframe>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="section-panel" id="sectionForm">
+        <div class="row justify-content-center"><div class="col-12 col-lg-10">
+          <div id="statusMsg" class="alert d-none" style="border-radius:12px"></div>
+          <div class="d-flex align-items-center justify-content-between mb-3"><h5 class="fw-bold" style="color:var(--ioc-blue)"><span id="formTitle">Submit New Complaint</span></h5><span class="badge bg-warning text-dark" id="editBadge" style="display:none">EDITING Row <span id="editRowNum"></span></span></div>
+          <form id="mainForm" novalidate><div id="formFieldsContainer"><div class="text-center py-4"><div class="skeleton" style="width:80%;height:35px;margin:8px auto"></div><div class="skeleton" style="width:60%;height:35px;margin:8px auto"></div></div></div>
+          <div class="d-flex gap-3 mt-4 justify-content-end"><button type="submit" class="btn btn-ioc-primary btn-lg" id="submitBtn"><i class="bi bi-check-circle"></i> Submit</button><button type="button" class="btn btn-ioc-secondary btn-lg" onclick="resetForm()"><i class="bi bi-x-circle"></i> Cancel</button></div></form>
+        </div></div>
+      </div>
+
+      <div class="section-panel" id="sectionList">
+        <div class="ioc-table-wrapper" id="tableWrapperCard">
+          <div class="table-header-bar">
+            <div class="d-flex align-items-center gap-2"><h6 class="mb-0 fw-bold">Complaints List</h6><span class="badge bg-light text-dark" id="recordCountBadge">0</span></div>
+            <div class="d-flex gap-2 flex-wrap">
+              <select class="form-select form-select-sm" id="statusFilter" style="width:auto;background:rgba(255,255,255,.15);color:white;border-color:rgba(255,255,255,.3)" onchange="applyFilters()"><option value="All">All Status</option></select>
+              <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search..." style="width:180px;background:rgba(255,255,255,.15);color:white;border-color:rgba(255,255,255,.3)" oninput="applyFilters()">
+              <button class="btn btn-sm btn-light" onclick="exportTableCSV()"><i class="bi bi-download"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive"><table class="table table-hover ioc-table mb-0"><thead><tr id="tableHeaders"></tr></thead><tbody id="tableBody"></tbody></table></div>
+          <div class="ioc-pagination"><div class="d-flex gap-2 align-items-center" id="paginationControls"></div><div class="text-muted" id="pageInfo"></div></div>
+        </div>
+      </div>
+
+      <div class="section-panel" id="sectionDealers">
+        <div class="ioc-table-wrapper">
+          <div class="table-header-bar">
+            <div class="d-flex align-items-center gap-2 flex-grow-1">
+              <h6 class="mb-0 fw-bold"><i class="bi bi-people-fill"></i> Dealers Directory</h6>
+              <span class="badge bg-light text-dark" id="dealerCountBadge">0</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center dealer-toolbar">
+              <div class="input-group input-group-sm" style="width:240px;">
+                <span class="input-group-text bg-white border-end-0" style="color:var(--ioc-blue);"><i class="bi bi-search"></i></span>
+                <input type="text" id="dealerSearchInput" class="form-control" placeholder="Search RO Name / RO Code..." oninput="onDealerSearch(this.value)" style="border-left:0;">
+                <button class="btn btn-light border" onclick="clearDealerSearch()" title="Clear"><i class="bi bi-x-lg"></i></button>
+              </div>
+              <button class="btn btn-sm btn-light" onclick="openAddDealerForm()"><i class="bi bi-person-plus-fill"></i> <span class="d-none d-md-inline">Add Dealer</span></button>
+              <button class="btn btn-sm btn-light" onclick="loadDealersData(currentDealerPage)"><i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Refresh</span></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover ioc-table mb-0">
+              <thead><tr id="dealerTableHeaders"></tr></thead>
+              <tbody id="dealerTableBody"></tbody>
+            </table>
+          </div>
+          <div class="ioc-pagination">
+            <div class="d-flex gap-2 align-items-center flex-wrap justify-content-center" id="dealerPaginationControls"></div>
+            <div class="text-muted" id="dealerPageInfo"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-panel" id="sectionDealerForm">
+        <div class="row justify-content-center"><div class="col-12 col-lg-8">
+          <div id="dealerStatusMsg" class="alert d-none" style="border-radius:12px"></div>
+          <h5 class="fw-bold mb-3" style="color:var(--ioc-blue)"><i class="bi bi-person-plus-fill"></i> <span id="dealerFormTitle">Add New Dealer</span></h5>
+          <form id="dealerForm" novalidate>
+            <div class="form-section">
+              <div class="section-title"><i class="bi bi-shop"></i> Dealer Information</div>
+              <div id="dealerFormFields"><div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading form...</p></div></div>
+            </div>
+            <div class="d-flex gap-3 mt-4 justify-content-end">
+              <button type="submit" class="btn btn-ioc-primary btn-lg" id="dealerSubmitBtn"><i class="bi bi-check-circle"></i> Save Dealer</button>
+              <button type="button" class="btn btn-ioc-secondary btn-lg" onclick="resetDealerForm()"><i class="bi bi-x-circle"></i> Clear</button>
+            </div>
+          </form>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="viewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background:var(--ioc-card);color:var(--ioc-text);border-radius:16px;border:1px solid var(--ioc-border)">
+      <div class="modal-header" style="background:linear-gradient(135deg,var(--ioc-blue),#0055cc);color:white;border-radius:16px 16px 0 0;padding:12px 18px">
+        <h5 class="modal-title fw-bold"><i class="bi bi-eye"></i> Complaint Details <span class="status-badge ms-2 default" id="modalStatusBadge"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="nav nav-pills mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#modalDetails"><i class="bi bi-info-circle"></i> Details</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#modalDealer"><i class="bi bi-person"></i> Dealer Info</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#modalWhatsApp"><i class="bi bi-whatsapp"></i> WhatsApp</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="modalDetails"><div id="modalBody" style="border-radius:12px;border:1px solid var(--ioc-border);overflow:hidden"></div></div>
+          <div class="tab-pane fade" id="modalDealer"><div id="modalDealerBody" style="border-radius:12px;border:1px solid var(--ioc-border);overflow:hidden"><div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm"></div> Loading...</div></div></div>
+          <div class="tab-pane fade" id="modalWhatsApp">
+            <div style="background:linear-gradient(135deg,#25D36615,#128C7E15);border:2px solid #25D366;border-radius:16px;padding:18px">
+              <h6 class="text-success fw-bold mb-3"><i class="bi bi-whatsapp"></i> Send via WhatsApp</h6>
+              <div class="mb-3"><label class="form-label fw-bold">Message</label><textarea id="whatsappMsg" class="form-control" rows="6"></textarea></div>
+              <div class="mb-3"><label class="form-label fw-bold">Mobile Number</label><div class="input-group"><span class="input-group-text">+91</span><input type="tel" id="whatsappMobile" class="form-control" placeholder="10-digit number" maxlength="10"></div></div>
+              <div class="d-flex justify-content-end"><button class="btn btn-ioc-success" id="btnSendWhatsApp" onclick="sendWhatsApp()" disabled><i class="bi bi-whatsapp"></i> Send</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between flex-wrap gap-2">
+        <div class="d-flex gap-2 align-items-center">
+          <select class="form-select form-select-sm" id="statusUpdateSelect" style="width:auto"><option value="">Change Status</option></select>
+          <button class="btn btn-sm btn-ioc-primary" onclick="updateStatusFromModal()"><i class="bi bi-check"></i></button>
+        </div>
+        <div class="d-flex gap-2">
+          <div class="btn-group">
+            <button type="button" class="btn btn-ioc-orange dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-pencil"></i> Edit</button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="javascript:void(0)" onclick="editComplaintFromModal()"><i class="bi bi-chat-left-text"></i> Complent</a></li>
+              <li><a class="dropdown-item" href="javascript:void(0)" onclick="editDealerFromModal()"><i class="bi bi-person"></i> Dealer Info</a></li>
+            </ul>
+          </div>
+          <button class="btn btn-ioc-danger" onclick="deleteFromModal()"><i class="bi bi-trash"></i> Delete</button>
+          <button class="btn btn-ioc-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="dealerViewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:var(--ioc-card);color:var(--ioc-text);border-radius:16px;border:1px solid var(--ioc-border)">
+      <div class="modal-header" style="background:linear-gradient(135deg,var(--ioc-orange),#ff8533);color:white;border-radius:16px 16px 0 0;padding:12px 18px">
+        <h5 class="modal-title fw-bold"><i class="bi bi-person-circle"></i> Dealer Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="dealerModalBody"></div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button class="btn btn-ioc-orange" onclick="editDealerRowFromModal()"><i class="bi bi-pencil"></i> Edit</button>
+        <button class="btn btn-ioc-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
