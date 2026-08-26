@@ -1,5 +1,5 @@
 // ⬇️ Yahan apna NAYA Web App URL paste karein
-const API_URL = "YAHAN_NAYA_URL_PASTE_KAREIN";
+const API_URL = "https://script.google.com/macros/s/AKfycby4KI5aRpxSaHfAH_55_BEyV21yNdtgRvxmfZd2o60xurNF_SzKtzG7u0UlvgE0yHkd/exec";
 
 document.addEventListener('DOMContentLoaded', function() {
     loadComplaints();
