@@ -11,7 +11,8 @@ function apiPost(action, data = {}) {
   return fetch(API_URL, {
     method: 'POST',
     body: JSON.stringify({ action: action, ...data }),
-    headers: { 'Content-Type': 'application/json' }
+    // CORS fix: text/plain use kiya hai
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
   }).then(res => res.json());
 }
 
