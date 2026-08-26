@@ -1,5 +1,5 @@
 // ⬇️ Yahan apna NAYA Web App URL paste karein
-const API_URL = "https://script.google.com/macros/s/AKfycby4KI5aRpxSaHfAH_55_BEyV21yNdtgRvxmfZd2o60xurNF_SzKtzG7u0UlvgE0yHkd/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzLGkVJFJFhk0anW37lpoVO-s8MVeeCWcmnafvjngw/dev";
 
 document.addEventListener('DOMContentLoaded', function() {
     loadComplaints();
