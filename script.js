@@ -1,21 +1,75 @@
-// ⬇️ Yahan apni Google Sheet ka Web App URL paste karein
-const API_URL = "https://script.google.com/macros/s/AKfycby4KI5aRpxSaHfAH_55_BEyV21yNdtgRvxmfZd2o60xurNF_SzKtzG7u0UlvgE0yHkd/exec"; 
+// ⬇️ Yahan apna NAYA Web App URL paste karein
+const API_URL = "YAHAN_NAYA_URL_PASTE_KAREIN";
 
 document.addEventListener('DOMContentLoaded', function() {
+    loadComplaints();
+    
+    // Form Submit Logic
+    const form = document.getElementById('complaintForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerText = "Saving...";
+        submitBtn.disabled = true;
+        
+        // Data collect karein
+        const formData = {
+            "Retail Outlet Name": document.getElementById('outletName').value,
+            "DU Complent Detail": document.getElementById('complaintDetail').value,
+            "Status": document.getElementById('status').value
+        };
+        
+        // Google Sheet mein bhejein
+        fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify(formData),
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if(result.status === 'success') {
+                alert("Complaint added successfully!");
+                form.reset(); // Form khali karein
+                loadComplaints(); // List refresh karein
+            } else {
+                alert("Error: " + result.message);
+            }
+            submitBtn.innerText = "Submit Complaint";
+            submitBtn.disabled = false;
+        })
+        .catch(error => {
+            alert("Connection failed!");
+            submitBtn.innerText = "Submit Complaint";
+            submitBtn.disabled = false;
+        });
+    });
+});
+
+// Complaints Load karne ka function
+function loadComplaints() {
+    const listContainer = document.getElementById('complaint-list');
+    listContainer.innerText = "Loading complaints...";
+    
     fetch(API_URL)
       .then(response => response.json())
       .then(result => {
-          const listContainer = document.getElementById('complaint-list');
-          
           if (result.data && result.data.length > 0) {
               let html = '';
-              // Hum sirf pehli 10 complaints dikhayenge taaki page heavy na ho
-              result.data.slice(0, 10).forEach(function(row) {
-                  // Maan ke row[0] Date hai, row[1] Outlet Name hai, row[3] Detail aur row[4] Status hai
-                  let date = row[0] ? new Date(row[0]).toLocaleDateString() : 'N/A';
-                  let outlet = row[1] || 'Unknown Outlet';
-                  let detail = row[3] || 'No details';
-                  let status = row[4] || 'Open';
+              // Headers ka index dhoondhein
+              let hIdx = {}, hLower = result.headers.map(h => String(h).trim().toLowerCase());
+              hLower.forEach((h, i) => hIdx[h] = i);
+              
+              let idxOutlet = hIdx['retail outlet name'] !== undefined ? hIdx['retail outlet name'] : 1;
+              let idxDetail = hIdx['du complent detail'] !== undefined ? hIdx['du complent detail'] : 3;
+              let idxStatus = hIdx['status'] !== undefined ? hIdx['status'] : 4;
+              let idxDate = hIdx['date'] !== undefined ? hIdx['date'] : 0;
+              
+              result.data.slice(-5).reverse().forEach(function(row) {
+                  let date = row[idxDate] ? new Date(row[idxDate]).toLocaleDateString() : 'N/A';
+                  let outlet = row[idxOutlet] || 'Unknown';
+                  let detail = row[idxDetail] || 'No details';
+                  let status = row[idxStatus] || 'Open';
                   
                   html += `
                     <div class="complaint-item">
@@ -32,7 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
           }
       })
       .catch(error => {
-          document.getElementById('complaint-list').innerText = "Connection failed!";
-          console.error("Error:", error);
+          listContainer.innerText = "Connection failed!";
       });
-});
+}
