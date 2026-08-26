@@ -1,55 +1,24 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
+/* Complaint List Styling */
+.complaint-item {
+  background: #f8f9fa;
+  border-left: 4px solid #003399;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
 }
 
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #f0f2f5;
+.complaint-item strong {
   color: #212529;
 }
 
-.app-container {
-  max-width: 600px;
-  margin: 0 auto;
-  min-height: 100vh;
-  background: #fff;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-header {
-  background: linear-gradient(135deg, #003399, #0055cc);
-  color: white;
-  padding: 20px;
-  text-align: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-header h1 {
-  font-size: 1.2rem;
-  margin: 0;
-}
-
-main {
-  padding: 15px;
-}
-
-.card {
-  background: white;
+.complaint-status {
+  display: inline-block;
+  padding: 2px 8px;
   border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  margin-bottom: 15px;
-}
-
-.card h2 {
-  font-size: 1.1rem;
-  color: #003399;
-  margin-bottom: 10px;
-  border-bottom: 2px solid #FF6600;
-  padding-bottom: 5px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  background: #FF6600;
+  margin-top: 5px;
 }
