@@ -15,8 +15,33 @@
     </header>
     
     <main>
+      <!-- Naya Complaint Form -->
+      <div class="card" id="form-card">
+        <h2>Add New Complaint</h2>
+        <form id="complaintForm">
+          <div class="form-group">
+            <label>Retail Outlet Name *</label>
+            <input type="text" id="outletName" required>
+          </div>
+          <div class="form-group">
+            <label>DU Complent Detail *</label>
+            <textarea id="complaintDetail" rows="3" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="status">
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary">Submit Complaint</button>
+        </form>
+      </div>
+
+      <!-- Complaints List -->
       <div class="card">
-        <h2>All Complaints</h2>
+        <h2>Recent Complaints</h2>
         <div id="complaint-list">Loading complaints...</div>
       </div>
     </main>
