@@ -17,7 +17,8 @@ function apiPost(action, data = {}) {
 
 var globalFields=[],currentPage=1,currentEditRow=null,currentViewRowNum=null;
 var currentViewHeaders=[],dashboardData={},rowDataMap={},isDarkMode=false;
-var trendCI=null,statusCI=null,allOutletsForMap=[];var currentRowsPerPage=10;
+var trendCI=null,statusCI=null,allOutletsForMap=[];
+var currentRowsPerPage=10;
 var isEditingDealer = false;
 var currentDealerViewRow = null;
 
@@ -57,7 +58,15 @@ function getGrpIcon(g){return{'Outlet Info':'bi-shop','Login Info':'bi-key-fill'
 function getSC(s){var l=String(s).toLowerCase().trim();if(l==='open')return'open';if(l==='in progress')return'in-progress';if(l==='resolved')return'resolved';if(l==='closed')return'closed';return'default';}
 function getSCol(s){var l=String(s).toLowerCase().trim();if(l==='open')return'#dc3545';if(l==='in progress')return'#ffc107';if(l==='resolved')return'#28a745';if(l==='closed')return'#6c757d';return'#003399';}
 
-function loadFormConfig(){apiGet('getFormStructure').then(function(fields){if(fields.error){showToast(fields.error,'error');return;}globalFields=fields;renderForm(fields);}).catch(function(err){showToast('Form error: '+err.message,'error');});}
+function loadFormConfig(){
+  apiGet('getFormStructure').then(function(fields){
+    if(fields.error){showToast(fields.error,'error');return;}
+    globalFields=fields;
+    renderForm(fields);
+  }).catch(function(err){
+    showToast('Form error: '+err.message,'error');
+  });
+}
 
 function renderForm(fields){
   var c=$('#formFieldsContainer');c.empty();
