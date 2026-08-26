@@ -1,5 +1,5 @@
 // ⬇️ Yahan apni Google Sheet ka Web App URL paste karein
-const API_URL = "https://script.google.com/macros/s/AKfycbwdlfmUGUy1__3TammocP9quhr9GDN6RDYpwYI22pjhEOWxw8l8yfBHsjpeQQyBsNp77A/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbwT-ZNwM0gl65DYdNtvq8iSzkOGi7eZcWEdNX1KMYaQsj49PL9P5KGNBSFMeUGyVEU7jA/exec"; 
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log("App Loaded Successfully!");
