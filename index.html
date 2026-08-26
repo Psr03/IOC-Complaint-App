@@ -8,8 +8,173 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <style>
+    /* ✨ FIX: Mobile par Google Map ke buttons aur zoom ko kaam karne ke liye */
+    .dynamic-map-iframe {
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+    }
+    .chart-card:has(.dynamic-map-iframe) {
+      touch-action: pan-y;
+    }
+    :root{--ioc-blue:#003399;--ioc-orange:#FF6600;--ioc-light:#f0f2f5;--ioc-card:#fff;--ioc-text:#212529;--ioc-muted:#6c757d;--ioc-border:#dee2e6;--ioc-shadow:rgba(0,0,0,0.08);--ioc-input-bg:#fff;--ioc-input-focus:#003399;--ioc-hover:#e9ecef;--ioc-sidebar-bg:#002b80;--g1:linear-gradient(135deg,#667eea,#764ba2);--g2:linear-gradient(135deg,#f093fb,#f5576c);--g3:linear-gradient(135deg,#4facfe,#00f2fe);--g4:linear-gradient(135deg,#43e97b,#38f9d7);--g5:linear-gradient(135deg,#fa709a,#fee140)}
+    [data-theme="dark"]{--ioc-blue:#4da6ff;--ioc-orange:#ff8533;--ioc-light:#0f0f23;--ioc-card:#16213e;--ioc-text:#e0e0e0;--ioc-muted:#999;--ioc-border:#2a2a4a;--ioc-shadow:rgba(0,0,0,0.3);--ioc-input-bg:#0f3460;--ioc-input-focus:#4da6ff;--ioc-hover:#1a1a3e;--ioc-sidebar-bg:#0a1a3a;--g1:linear-gradient(135deg,#5a5a9e,#8a5aaa);--g2:linear-gradient(135deg,#c070cb,#d5446c);--g3:linear-gradient(135deg,#4facfe,#00c2fe);--g4:linear-gradient(135deg,#43b97b,#38c9d7);--g5:linear-gradient(135deg,#da608a,#d8c040)}
+    *{transition:background-color .3s,color .3s,border-color .3s}
+    html,body{height:100%;margin:0;background:var(--ioc-light);color:var(--ioc-text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden}
+    
+    .app-layout{display:flex;min-height:100vh}
+    .sidebar{width:250px;background:linear-gradient(180deg,var(--ioc-sidebar-bg),var(--ioc-blue));color:white;position:fixed;top:0;left:0;bottom:0;z-index:1001;transition:transform .3s ease;display:flex;flex-direction:column}
+    .sidebar .sidebar-header{padding:20px;text-align:center;border-bottom:1px solid rgba(255,255,255,.1)}
+    .sidebar .sidebar-header .logo-icon{width:50px;height:50px;background:var(--ioc-orange);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:bold;margin:0 auto 8px;box-shadow:0 4px 10px rgba(255,102,0,.4)}
+    .sidebar .sidebar-header h5{margin:0;font-size:1rem;font-weight:700}
+    .sidebar .sidebar-menu{padding:15px 10px;flex:1;overflow-y:auto}
+    .sidebar-link{color:rgba(255,255,255,.8);padding:12px 15px;border-radius:10px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:12px;font-weight:500;font-size:.9rem;transition:all .2s;border-left:4px solid transparent}
+    .sidebar-link:hover{background:rgba(255,255,255,.1);color:white}
+    .sidebar-link.active{background:rgba(255,255,255,.15);color:white;border-left-color:var(--ioc-orange)}
+    .sidebar-link i{font-size:1.1rem}
+
+    .sidebar-submenu {max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; margin-left: 15px; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 5px;}
+    .sidebar-submenu.show {max-height: 200px;}
+    .sidebar-submenu .sidebar-link {padding: 10px 15px; font-size: 0.85rem; border-left: none;}
+    .sidebar-submenu .sidebar-link:hover {background: rgba(255,255,255,0.05);}
+    .sidebar-submenu .sidebar-link.active {border-left: none; background: rgba(255,255,255,0.15);}
+    
+    .main-content{flex:1;margin-left:250px;transition:margin .3s ease;display:flex;flex-direction:column;min-height:100vh;min-width:0;overflow-x:hidden;}
+    .top-navbar{background:var(--ioc-card);height:60px;box-shadow:0 2px 10px var(--ioc-shadow);position:sticky;top:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+    .btn-toggle-sidebar{background:none;border:none;font-size:1.3rem;color:var(--ioc-text);cursor:pointer}
+    .navbar-title{font-size:1.1rem;font-weight:700;color:var(--ioc-blue);margin-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .nav-actions{display:flex;gap:8px;flex-shrink:0;}
+    .btn-icon{background:var(--ioc-hover);border:1px solid var(--ioc-border);color:var(--ioc-text);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .btn-icon:hover{background:var(--ioc-blue);color:white;border-color:var(--ioc-blue)}
+    .content-area{padding:20px;flex:1;min-width:0;overflow-x:hidden;}
+    @media(max-width:992px){.sidebar{transform:translateX(-100%)}.sidebar.show{transform:translateX(0)}.main-content{margin-left:0}}
+    .overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:none}.overlay.show{display:block}
+    
+    .stat-card{background:var(--ioc-card);border-radius:16px;padding:20px;box-shadow:0 4px 15px var(--ioc-shadow);border:1px solid var(--ioc-border);position:relative;overflow:hidden}
+    .stat-card:hover{transform:translateY(-4px);box-shadow:0 8px 25px rgba(0,0,0,.12)}
+    .stat-card .stat-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:white;flex-shrink:0}
+    .stat-card .stat-value{font-size:2.2rem;font-weight:800;line-height:1}
+    .stat-card .stat-label{font-size:.8rem;color:var(--ioc-muted);margin-top:3px;font-weight:500}
+    .stat-card .stat-change{font-size:.72rem;margin-top:4px;font-weight:700}
+    .stat-card .stat-change.up{color:#28a745}.stat-card .stat-change.down{color:#dc3545}
+    .stat-card .stat-ring{position:absolute;right:-15px;top:-15px;width:80px;height:80px;border-radius:50%;opacity:.08}
+    .dash-header{background:var(--ioc-card);border-radius:16px;padding:15px 20px;box-shadow:0 2px 10px var(--ioc-shadow);margin-bottom:15px;display:flex;justify-content:space-between;align-items:center}
+    .chart-card{background:var(--ioc-card);border-radius:16px;padding:18px;box-shadow:0 4px 15px var(--ioc-shadow);border:1px solid var(--ioc-border)}
+    .chart-card h6{font-weight:700;color:var(--ioc-text);margin-bottom:12px;font-size:.9rem}
+    .form-section{background:var(--ioc-card);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 2px 10px var(--ioc-shadow);border:1px solid var(--ioc-border)}
+    .form-section .section-title{font-size:.95rem;font-weight:700;color:var(--ioc-blue);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--ioc-orange);display:flex;align-items:center;gap:6px}
+    .form-control,.form-select{background-color:var(--ioc-input-bg)!important;color:var(--ioc-text)!important;border-color:var(--ioc-border)!important;border-radius:10px;padding:9px 13px}
+    .form-control:focus,.form-select:focus{border-color:var(--ioc-input-focus)!important;box-shadow:0 0 0 3px rgba(0,51,153,.12)!important}
+    .form-control.readonly-field{background-color:var(--ioc-hover)!important;cursor:not-allowed;opacity:.8}
+    
+    .ioc-table-wrapper {background: var(--ioc-card); border-radius: 16px; box-shadow: 0 4px 15px var(--ioc-shadow); border: 1px solid var(--ioc-border); overflow: hidden; display: flex; flex-direction: column; height: calc(100vh - 140px); height: calc(100dvh - 140px); }
+    .ioc-table-wrapper .table-header-bar { background: linear-gradient(135deg,var(--ioc-blue),#0055cc); color: white; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; flex-shrink: 0;}
+    .ioc-table-wrapper .table-responsive { flex: 1 1 auto; overflow: auto; min-height: 0; -webkit-overflow-scrolling: touch; display: block; max-width: 100%;}
+    .ioc-table { margin-bottom: 0; width: 100%; min-width: 800px;} 
+    .ioc-table thead th { position: sticky; top: 0; z-index: 2; background: #343a40; color: white; font-weight: 600; padding: 10px 8px; font-size: .82rem; white-space: nowrap; border-color: rgba(255,255,255,.1);}
+    .ioc-table tbody td { padding: 8px; font-size: .82rem; vertical-align: middle; background-color: var(--ioc-card); color: var(--ioc-text); border-color: var(--ioc-border); white-space: nowrap;}
+    .ioc-table tbody tr:hover { background-color: var(--ioc-hover) !important;}
+    .ioc-pagination { display: flex; flex-direction: row; justify-content: center; align-items: center; padding: 12px; gap: 8px; background: var(--ioc-card); flex-shrink: 0; border-top: 1px solid var(--ioc-border); flex-wrap: wrap;}
+    
+    [data-theme="dark"] .ioc-table thead th { background:#0f172a !important; color:#e0e0e0 !important; }
+    [data-theme="dark"] .ioc-table tbody td { background-color:var(--ioc-card) !important; color:var(--ioc-text) !important; }
+    [data-theme="dark"] .ioc-table tbody tr:hover td { background-color:var(--ioc-hover) !important; }
+    [data-theme="dark"] .table-header-bar { background:linear-gradient(135deg,var(--ioc-sidebar-bg),var(--ioc-blue)) !important; }
+    [data-theme="dark"] .table-header-bar input, [data-theme="dark"] .table-header-bar select { background:rgba(255,255,255,.1) !important; color:white !important; border-color:rgba(255,255,255,.2) !important; }
+    [data-theme="dark"] .table-header-bar input::placeholder { color:rgba(255,255,255,.6) !important; }
+    
+    .action-btns{display:flex;gap:4px}
+    .action-btns .btn{min-width:28px;max-width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;border-radius:6px}
+    .action-btns .btn-view{background:#17a2b8;color:white;border:none}.action-btns .btn-view:hover{background:#138496}
+    .action-btns .btn-edit{background:#ffc107;color:#333;border:none}.action-btns .btn-edit:hover{background:#e0a800}
+    .action-btns .btn-del{background:#dc3545;color:white;border:none}.action-btns .btn-del:hover{background:#c82333}
+    .btn-ioc-primary{background:linear-gradient(135deg,var(--ioc-blue),#0055cc);color:white;border:none;border-radius:10px;padding:9px 22px;font-weight:600;box-shadow:0 3px 10px rgba(0,51,153,.25)}
+    .btn-ioc-primary:hover{transform:translateY(-2px);color:white}
+    .btn-ioc-secondary{background:var(--ioc-card);color:var(--ioc-text);border:2px solid var(--ioc-border);border-radius:10px;padding:9px 22px;font-weight:600}
+    .btn-ioc-orange{background:linear-gradient(135deg,var(--ioc-orange),#ff8533);color:white;border:none;border-radius:10px;font-weight:600}
+    .btn-ioc-danger{background:linear-gradient(135deg,#dc3545,#c82333);color:white;border:none;border-radius:8px}
+    .btn-ioc-success{background:linear-gradient(135deg,#28a745,#218838);color:white;border:none;border-radius:10px;font-weight:600}
+    .page-btn{min-width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-weight:600;font-size:.82rem;background:var(--ioc-card);color:var(--ioc-text);border:1px solid var(--ioc-border)}
+    .page-btn:hover:not(.disabled):not(.active-page){background:var(--ioc-hover);border-color:var(--ioc-blue)}
+    .page-btn.active-page{background:var(--ioc-blue);color:white;border-color:var(--ioc-blue)}
+    .page-btn.disabled{opacity:.35;cursor:not-allowed}
+    .toast-container{position:fixed;top:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:320px}
+    .ioc-toast{background:var(--ioc-card);border-radius:12px;padding:12px 16px;box-shadow:0 6px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;border-left:4px solid}
+    .ioc-toast.success{border-left-color:#28a745}.ioc-toast.error{border-left-color:#dc3545}.ioc-toast.info{border-left-color:#17a2b8}
+    .ioc-toast .toast-icon{font-size:1.2rem}.ioc-toast .toast-msg{font-size:.85rem;font-weight:500}
+    .status-badge{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+    .status-badge.open{background:#dc3545;color:white}.status-badge.in-progress{background:#ffc107;color:#333}.status-badge.resolved{background:#28a745;color:white}.status-badge.closed{background:#6c757d;color:white}.status-badge.default{background:var(--ioc-hover);color:var(--ioc-text)}
+    .skeleton{background:linear-gradient(90deg,var(--ioc-hover) 25%,var(--ioc-card) 50%,var(--ioc-hover) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .section-panel{display:none;animation:fadeIn .3s ease}
+    .section-panel.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:var(--ioc-hover)}::-webkit-scrollbar-thumb{background:var(--ioc-blue);border-radius:4px}
+
+    /* ✨ 100% STRICT MOBILE CSS - ENFORCES BIGGER SIZES */
+    @media (max-width: 768px) {
+      html, body { font-size: 16px !important; -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
+      .dynamic-map-iframe { height: 450px !important; min-height: 450px !important; }
+      .content-area { padding: 12px !important; }
+      .top-navbar { height: 60px !important; padding: 0 10px !important; }
+      .navbar-title { font-size: 1.2rem !important; }
+      .btn-icon { width: 44px !important; height: 44px !important; font-size: 1.4rem !important; }
+      .dash-header { padding: 15px !important; }
+      .dash-header h5 { font-size: 1.3rem !important; }
+      .stat-card { padding: 15px !important; }
+      .stat-card .stat-icon { width: 50px !important; height: 50px !important; font-size: 1.6rem !important; }
+      .stat-card .stat-value { font-size: 2.2rem !important; }
+      .stat-card .stat-label { font-size: 1rem !important; }
+      .form-section { padding: 15px !important; }
+      .form-section .section-title { font-size: 1.2rem !important; }
+      .form-control, .form-select { padding: 14px 15px !important; font-size: 16px !important; }
+      .btn-ioc-primary, .btn-ioc-secondary { padding: 14px 20px !important; font-size: 1.2rem !important; }
+      
+      /* Force Table Size */
+      .ioc-table-wrapper { height: auto !important; max-height: 80vh !important; display: block !important; overflow: hidden !important; }
+      .ioc-table-wrapper .table-header-bar { display: block !important; padding: 15px !important; border-radius: 12px 12px 0 0 !important; }
+      .ioc-table-wrapper .table-header-bar h6 { font-size: 1.3rem !important; margin-bottom: 10px !important; }
+      .ioc-table-wrapper .table-header-bar .btn { font-size: 1.1rem !important; padding: 10px 12px !important; }
+      
+      .ioc-table-wrapper .table-responsive { display: block !important; width: 100% !important; overflow-x: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; flex: none !important; }
+      .ioc-table { min-width: 800px !important; width: 100% !important; }
+      .ioc-table thead th { padding: 14px 10px !important; font-size: 1.1rem !important; white-space: nowrap !important; position: relative !important; }
+      .ioc-table tbody td { padding: 14px 10px !important; font-size: 1.1rem !important; white-space: nowrap !important; }
+      
+      .ioc-table thead th:last-child, .ioc-table tbody td:last-child { min-width: 170px !important; width: 170px !important; }
+      .action-btns { gap: 10px !important; }
+      .action-btns .btn { min-width: 48px !important; max-width: 48px !important; height: 48px !important; font-size: 1.3rem !important; border-radius: 8px !important; }
+      
+      .ioc-pagination { display: block !important; padding: 15px !important; flex: none !important; }
+      .page-btn { min-width: 48px !important; height: 48px !important; font-size: 1.2rem !important; }
+      
+      .modal-dialog { margin: 0.5rem !important; }
+      .modal-body { padding: 15px !important; }
+      .modal-footer { padding: 12px !important; flex-direction: column !important; gap: 10px !important; }
+      .modal-footer .btn { width: 100% !important; font-size: 1.2rem !important; padding: 12px !important; }
+
+      .dealer-toolbar { width: 100% !important; flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+      .dealer-toolbar .input-group { width: 100% !important; }
+      .dealer-toolbar .btn { width: 100% !important; justify-content: center !important; }
+      .dealer-rows-box { width: 100% !important; justify-content: center !important; margin-left: 0 !important; margin-top: 8px !important; border-left: none !important; padding-left: 0 !important; border-top: 1px solid var(--ioc-border) !important; padding-top: 8px !important; }
+      
+      .sidebar { width: 280px !important; }
+      .sidebar .sidebar-header h5 { font-size: 1.2rem !important; }
+      .sidebar-link { padding: 16px 15px !important; font-size: 1.1rem !important; }
+      
+      .toast-container { top: 70px !important; right: 10px !important; left: 10px !important; max-width: 100% !important; }
+      .ioc-toast { padding: 15px !important; }
+      .ioc-toast .toast-msg { font-size: 1rem !important; }
+      .ioc-toast .toast-icon { font-size: 1.4rem !important; }
+      
+      #mainForm .d-flex.gap-3, #dealerForm .d-flex.gap-3 { flex-direction: column-reverse !important; }
+      #mainForm .d-flex.gap-3 .btn, #dealerForm .d-flex.gap-3 .btn { width: 100% !important; }
+      
+      .modal-title { font-size: 1.2rem !important; }
+      .ioc-pagination .d-flex { flex-wrap: wrap !important; justify-content: center !important; }
+      .ioc-pagination #rowsPerPageInput, .ioc-pagination #dealerRowsPerPageInput { width: 70px !important; padding: 8px !important; }
+    }
+  </style>
 </head>
 <body>
 
@@ -211,6 +376,551 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="script.js"></script>
+<script>
+var globalFields=[],currentPage=1,currentEditRow=null,currentViewRowNum=null;
+var currentViewHeaders=[],dashboardData={},rowDataMap={},isDarkMode=false;
+var trendCI=null,statusCI=null,allOutletsForMap=[];var currentRowsPerPage=10;
+var isEditingDealer = false;
+var currentDealerViewRow = null;
+
+ $(document).ready(function(){
+  loadFormConfig(); loadDashboard(); loadListData(1);
+  $('#mainForm').on('submit',function(e){e.preventDefault();submitForm();});
+  $('#dealerForm').on('submit',function(e){e.preventDefault();submitDealerForm();});
+  // ✨ Load Map Search Data
+  google.script.run.withSuccessHandler(function(list){ allOutletsForMap = list || []; }).getAllOutletsForMapSearch();
+});
+
+function toggleSidebar(){ $('#sidebar').toggleClass('show'); $('#overlay').toggleClass('show'); }
+function toggleSubMenu(el) {
+  $(el).next('.sidebar-submenu').toggleClass('show');
+  $(el).find('.bi-chevron-down').toggleClass('bi-chevron-up');
+}
+function switchSection(id, title, el){
+  $('.section-panel').removeClass('active');
+  $('#section'+id.charAt(0).toUpperCase()+id.slice(1)).addClass('active');
+  $('.sidebar-link').removeClass('active');
+  if(el) $(el).addClass('active');
+  $('#pageTitle').text(title);
+  if(window.innerWidth <= 992) { $('#sidebar').removeClass('show'); $('#overlay').removeClass('show'); }
+  if(id==='dashboard') loadDashboard();
+  if(id==='list') loadListData(currentPage);
+  if(id==='dealerForm' && !isEditingDealer) loadDealerForm(); 
+  if(id==='dealers') loadDealersData(); 
+}
+
+function toggleDarkMode(){isDarkMode=!isDarkMode;document.documentElement.setAttribute('data-theme',isDarkMode?'dark':'light');$('#darkModeBtn').html(isDarkMode?'<i class="bi bi-sun-fill"></i>':'<i class="bi bi-moon-stars-fill"></i>');showToast(isDarkMode?'Dark mode ON':'Light mode ON','info');if(dashboardData.trend)renderCharts(dashboardData);}
+function showToast(m,t){t=t||'info';var ic={success:'<i class="bi bi-check-circle-fill text-success"></i>',error:'<i class="bi bi-exclamation-circle-fill text-danger"></i>',info:'<i class="bi bi-info-circle-fill text-info"></i>'};var e=$('<div class="ioc-toast '+t+'"><span class="toast-icon">'+ic[t]+'</span><span class="toast-msg">'+m+'</span></div>');$('#toastContainer').append(e);setTimeout(function(){e.fadeOut(300,function(){$(this).remove();});},3500);}
+function refreshAllData(){showToast('Refreshing...','info');loadDashboard();loadListData(currentPage);}
+function fHI(headers,target){if(!target)return-1;var t=String(target).trim(),tl=t.toLowerCase();for(var i=0;i<headers.length;i++)if(String(headers[i]).trim()===t)return i;for(var i=0;i<headers.length;i++)if(String(headers[i]).trim().toLowerCase()===tl)return i;for(var i=0;i<headers.length;i++){var h=String(headers[i]).trim().toLowerCase();if(h.indexOf(tl)>-1||tl.indexOf(h)>-1)return i;}return-1;}
+function dt2inp(s){if(!s)return'';s=String(s).trim();if(s.match(/^\d{4}-\d{2}-\d{2}$/))return s;if(s.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)){var p=s.split('/');return p[2]+'-'+(p[1].length<2?'0'+p[1]:p[1])+'-'+(p[0].length<2?'0'+p[0]:p[0]);}try{var d=new Date(s);if(d&&!isNaN(d))return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}catch(e){}return s;}
+function getTodayDate(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function togglePwd(id,b){var i=document.getElementById(id),ic=$(b).find('i');if(i.type==='password'){i.type='text';ic.removeClass('bi-eye').addClass('bi-eye-slash');}else{i.type='password';ic.removeClass('bi-eye-slash').addClass('bi-eye');}}
+function getGrpIcon(g){return{'Outlet Info':'bi-shop','Login Info':'bi-key-fill','Complaint Info':'bi-chat-left-text-fill','General':'bi-calendar3','Notice':'bi-bell','Other Info':'bi-three-dots'}[g]||'bi-three-dots';}
+function getSC(s){var l=String(s).toLowerCase().trim();if(l==='open')return'open';if(l==='in progress')return'in-progress';if(l==='resolved')return'resolved';if(l==='closed')return'closed';return'default';}
+function getSCol(s){var l=String(s).toLowerCase().trim();if(l==='open')return'#dc3545';if(l==='in progress')return'#ffc107';if(l==='resolved')return'#28a745';if(l==='closed')return'#6c757d';return'#003399';}
+
+function loadFormConfig(){google.script.run.withSuccessHandler(function(fields){if(fields.error){showToast(fields.error,'error');return;}globalFields=fields;renderForm(fields);}).withFailureHandler(function(err){showToast('Form error: '+err.message,'error');}).getFormStructure();}
+
+function renderForm(fields){
+  var c=$('#formFieldsContainer');c.empty();
+  var groups={},go=[];
+  fields.forEach(function(f){var g=f.group||'Other Info';if(!groups[g]){groups[g]=[];go.push(g);}groups[g].push(f);});
+  go.forEach(function(grp){
+    var h='<div class="form-section"><div class="section-title"><i class="bi '+getGrpIcon(grp)+'"></i> '+grp+'</div>';
+    groups[grp].forEach(function(f){
+      if(f.type==='hidden')return;
+      if(f.type==='msgbox'){h+='<div class="alert alert-info" style="border-radius:10px"><i class="bi bi-info-circle"></i> '+f.message+'</div>';return;}
+      var req=f.required?'required':'',star=f.required?'<span class="text-danger">*</span>':'';
+      var sid=f.name.replace(/[^a-zA-Z0-9]/g,'_'),dv=f.default||'';
+      if(f.type==='date'&&(dv==='TODAY()'||dv==='today'))dv=getTodayDate();
+      if(dv==='*')dv='';
+      h+='<div class="mb-3"><label class="form-label fw-semibold">'+f.label+' '+star+'</label>';
+      if(f.type==='autofill'){
+        if(f.label.toLowerCase().indexOf('password')>-1){h+='<div class="input-group"><input type="password" class="form-control" id="inp_'+sid+'" name="'+f.name+'" '+req+'><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'inp_'+sid+'\',this)"><i class="bi bi-eye"></i></button></div>';}
+        else{h+='<input type="text" class="form-control readonly-field" id="inp_'+sid+'" name="'+f.name+'" readonly '+req+'>';}
+      }
+      else if(f.type==='srno'){h+='<input type="text" class="form-control readonly-field" id="inp_'+sid+'" name="'+f.name+'" value="'+dv+'" readonly>';}
+      else if(f.type==='date'){h+='<input type="date" class="form-control" id="inp_'+sid+'" name="'+f.name+'" value="'+dv+'" '+req+'>';}
+      else if(f.type==='password'){h+='<div class="input-group"><input type="password" class="form-control" id="inp_'+sid+'" name="'+f.name+'" '+req+'><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'inp_'+sid+'\',this)"><i class="bi bi-eye"></i></button></div>';}
+      else if(f.type==='dependent'){h+='<select class="form-select" id="inp_'+sid+'" name="'+f.name+'" disabled '+req+'><option value="">Select '+f.parent+' first</option></select>';}
+      else if(f.type==='select'){h+='<select class="form-select" id="inp_'+sid+'" name="'+f.name+'" '+req+'><option value="">Select</option>';f.options.forEach(function(o){h+='<option value="'+o+'">'+o+'</option>';});h+='</select>';}
+      else if(f.type==='textarea'){h+='<textarea class="form-control" id="inp_'+sid+'" name="'+f.name+'" rows="3" '+req+'>'+dv+'</textarea>';}
+      else if(f.type==='radio'){ 
+        h+='<div class="d-flex gap-4 mt-2">';
+        f.options.forEach(function(opt, idx){
+          var rid='inp_'+sid+'_'+idx;
+          var checked=(idx===0)?'checked':'';
+          h+='<div class="form-check"><input class="form-check-input" type="radio" id="'+rid+'" name="'+f.name+'" value="'+opt+'" '+checked+' '+req+'><label class="form-check-label" for="'+rid+'">'+opt+'</label></div>';
+        });
+        h+='</div>';
+      }
+      else{h+='<input type="text" class="form-control" id="inp_'+sid+'" name="'+f.name+'" value="'+dv+'" '+req+'>';}
+      h+='</div>';
+    });
+    h+='</div>';c.append(h);
+  });
+  fields.forEach(function(f){var sid=f.name.replace(/[^a-zA-Z0-9]/g,'_');if(f.type==='autofill')setupAF(f,sid);if(f.type==='dependent')setupDP(f,sid);});
+}
+
+function setupAF(f,sid){var pid=f.parent.replace(/[^a-zA-Z0-9]/g,'_'),inp=$('#inp_'+sid),map=f.mapping||{};$(document).on('change','#inp_'+pid,function(){var sel=$(this).val();inp.val('');if(sel&&map[sel]){inp.val(map[sel][0]);}});}
+function setupDP(f,sid){var pid=f.parent.replace(/[^a-zA-Z0-9]/g,'_'),sel=$('#inp_'+sid),map=f.mapping||{};$(document).on('change','#inp_'+pid,function(){var pv=$(this).val();sel.empty().append('<option value="">Select</option>');if(pv&&map[pv]){sel.prop('disabled',false);map[pv].forEach(function(o){sel.append('<option value="'+o+'">'+o+'</option>');});}else{sel.prop('disabled',true);}});}
+
+function submitForm(){
+  var fd={},hasErr=false;
+  globalFields.forEach(function(f){
+    if(f.type==='hidden'||f.type==='msgbox')return;
+    var sid=f.name.replace(/[^a-zA-Z0-9]/g,'_');
+    if(f.type==='radio'){
+      var checked=$('input[name="'+f.name+'"]:checked').val();
+      if(f.required&&!checked){hasErr=true;}
+      fd[f.name]=checked||'';
+      return;
+    }
+    var el=$('#inp_'+sid),val=(el.val()||'').trim();
+    if(f.required&&!val){el.addClass('is-invalid');hasErr=true;return;}
+    el.removeClass('is-invalid');fd[f.name]=val;
+  });
+  if(hasErr){showToast('Please fill all required fields!','error');return;}
+  var btn=$('#submitBtn');
+  btn.prop('disabled',true).html('<span class="spinner-border spinner-border-sm"></span> Saving...'); 
+  google.script.run.withSuccessHandler(function(r){
+    btn.prop('disabled',false).html('<i class="bi bi-check-circle"></i> Submit');
+    if(r.success){
+      showToast(r.message,'success');
+      // ✨ Form ko reset karein aur sidha Complaints List page par bhej dein
+      currentEditRow = null;
+      $('#editBadge').hide();
+      $('#formTitle').text('Submit New Complaint');
+      
+      // "Complaints" wale sidebar button ko find karke click karein
+      var complaintLink = Array.from(document.querySelectorAll('.sidebar-link')).find(el => el.textContent.includes('Complaints'));
+      if(complaintLink) complaintLink.click();
+      
+      loadDashboard(); 
+      loadListData(1);
+    } else { showToast(r.message,'error'); }
+  }).withFailureHandler(function(err){
+    btn.prop('disabled',false).html('<i class="bi bi-check-circle"></i> Submit');
+    showToast('Error: '+err.message,'error');
+  }).saveData(fd,currentEditRow);
+}
+
+function resetForm(){currentEditRow=null;$('#editBadge').hide();$('#formTitle').text('Submit New Complaint');globalFields.forEach(function(f){if(f.type==='hidden'||f.type==='msgbox')return;var sid=f.name.replace(/[^a-zA-Z0-9]/g,'_'),dv=f.default||'';if(dv==='*')dv='';if(f.type==='date'&&(dv==='TODAY()'||dv==='today'))dv=getTodayDate();if(f.type==='select'||f.type==='dependent'){$('#inp_'+sid).val('');}else if(f.type==='radio'){$('input[name="'+f.name+'"]').prop('checked',false);if(f.options&&f.options.length>0)$('input[name="'+f.name+'"][value="'+f.options[0]+'"]').prop('checked',true);}else{$('#inp_'+sid).val(dv);}$('#inp_'+sid).removeClass('is-invalid');});}
+
+function editRow(rowNum){
+  var item=rowDataMap[rowNum];if(!item){showToast('Data not found','warning');return;}
+  currentEditRow=rowNum;$('#editBadge').show().find('span').text(rowNum);$('#formTitle').text('Edit Complaint (Row '+rowNum+')');
+  var headers=currentViewHeaders,row=item.rowData;
+  globalFields.forEach(function(f){
+    var sid=f.name.replace(/[^a-zA-Z0-9]/g,'_');
+    var hi=fHI(headers,f.name),val=(hi>-1)?(row[hi]||''):'';
+    if(f.type==='radio'){
+      $('input[name="'+f.name+'"]').prop('checked',false);
+      $('input[name="'+f.name+'"][value="'+val+'"]').prop('checked',true);
+    } else {
+      var el=$('#inp_'+sid);if(!el.length)return;
+      if(f.type==='date')el.val(dt2inp(val));else el.val(val);
+    }
+  });
+  $('.sidebar-link[onclick*="form"]').click();
+}
+
+function deleteRow(rn){if(confirm('Delete this complaint?')){google.script.run.withSuccessHandler(function(r){if(r.success){showToast(r.message,'success');loadDashboard();loadListData(currentPage);}else showToast(r.message,'error');}).withFailureHandler(function(e){showToast('Error: '+e.message,'error');}).deleteComplaint(rn);}}
+
+function loadDashboard(){google.script.run.withSuccessHandler(function(d){if(d.error){showToast(d.error,'error');return;}dashboardData=d;renderStats(d);$('#dashLastUpdated').text('Last updated: '+d.lastUpdated);}).withFailureHandler(function(e){showToast(e.message,'error');}).getDashboardData();}
+function renderStats(d){animateCount('statTotal',d.total||0);animateCount('statToday',d.today||0);animateCount('statActive',d.activeComplaints||0);animateCount('statOutlets',d.uniqueOutlets||0);$('#statWeekInfo').text('7 days: '+d.week);var ch=d.todayChange||0;if(ch>0)$('#statTodayChange').html('<i class="bi bi-arrow-up"></i> '+ch+'%').css('color','#28a745');else if(ch<0)$('#statTodayChange').html('<i class="bi bi-arrow-down"></i> '+ch+'%').css('color','#dc3545');else $('#statTodayChange').html('<i class="bi bi-dash"></i> 0%').css('color','#6c757d');$('#statResolvedInfo').text('Resolved: '+d.resolvedComplaints);}
+function animateCount(id,t){var e=document.getElementById(id),s=parseInt(e.textContent)||0,d=500,st=null;function step(ts){if(!st)st=ts;var p=Math.min((ts-st)/d,1);e.textContent=Math.floor(s+(t-s)*p);if(p<1)requestAnimationFrame(step);else e.textContent=t;}requestAnimationFrame(step);}
+
+// ✨ NEW: Search Outlet on Map Function
+function searchOutletOnMap() {
+  var query = $('#mapSearchInput').val().trim();
+  if(!query) { showToast('Please enter RO Name or RO Code', 'warning'); return; }
+  
+  var finalQuery = query;
+  // Agar user ne RO Code likha hai, toh uska RO Name dhoondh lenge taaki Google Maps sahi se location dikhaye
+  var matched = allOutletsForMap.find(function(item) { 
+    return item.ro.toLowerCase() === query.toLowerCase(); 
+  });
+  
+  if(matched) { finalQuery = matched.name; }
+  
+  // Google Maps Embed URL
+  var mapSrc = "https://maps.google.com/maps?q=" + encodeURIComponent(finalQuery) + "&output=embed";
+  $('#outletMap').attr('src', mapSrc);
+  showToast('Showing map for: ' + finalQuery, 'info');
+}
+
+function loadListData(page){
+  currentPage=page||1;
+  var search=$('#searchInput').val()||'',status=$('#statusFilter').val()||'All';
+  $('#tableBody').html('<tr><td colspan="10" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>');
+  google.script.run.withSuccessHandler(function(r){
+    if(r.error){showToast(r.error,'error');return;}
+    currentViewHeaders=r.headers||[];
+    var sf=$('#statusFilter');sf.empty().append('<option value="All">All Status</option>');
+    (r.statusOptions||[]).forEach(function(s){sf.append('<option value="'+s+'"'+(status===s?' selected':'')+'>'+s+'</option>');});
+    $('#recordCountBadge').text(r.totalRecords||0);
+    var th=$('#tableHeaders');th.empty();currentViewHeaders.forEach(function(h){th.append('<th>'+h+'</th>');});th.append('<th>Actions</th>');
+    var tb=$('#tableBody');tb.empty();
+    if(!r.data||r.data.length===0){tb.html('<tr><td colspan="'+(currentViewHeaders.length+1)+'" class="text-center text-muted py-4">No complaints found</td></tr>');return;}
+    r.data.forEach(function(item){
+      rowDataMap[item.rowNum]=item;
+      var tr='<tr>';
+      currentViewHeaders.forEach(function(h,idx){var v=item.rowData[idx]||'';if(h==='Status'&&v)tr+='<td><span class="status-badge '+getSC(v)+'">'+v+'</span></td>';else tr+='<td>'+v+'</td>';});
+      tr+='<td><div class="action-btns"><button class="btn btn-view" onclick="viewRow('+item.rowNum+')" title="View"><i class="bi bi-eye"></i></button><button class="btn btn-edit" onclick="editRow('+item.rowNum+')" title="Edit"><i class="bi bi-pencil"></i></button><button class="btn btn-del" onclick="deleteRow('+item.rowNum+')" title="Delete"><i class="bi bi-trash"></i></button></div></td></tr>';
+      tb.append(tr);
+    });
+    renderPagination(r.totalPages,r.currentPage,r.totalRecords);
+  }).withFailureHandler(function(e){showToast('Load error: '+e.message,'error');}).loadComplaints(currentPage, search, status, currentRowsPerPage);
+}
+
+function renderPagination(tp,cp,tr){
+  var pc=$('#paginationControls');pc.empty();
+  if(tp<=0)return;
+  pc.append('<button class="page-btn" '+(cp<=1?'disabled':'')+' onclick="loadListData('+(cp-1)+')">‹</button>');
+  for(var i=1;i<=tp;i++){
+    if(i===1||i===tp||(i>=cp-2&&i<=cp+2)){
+      pc.append('<button class="page-btn '+(i===cp?'active-page':'')+'" onclick="loadListData('+i+')">'+i+'</button>');
+    } else if(i===cp-3||i===cp+3) {
+      pc.append('<button class="page-btn disabled">...</button>');
+    }
+  }
+  pc.append('<button class="page-btn" '+(cp>=tp?'disabled':'')+' onclick="loadListData('+(cp+1)+')">›</button>');
+  pc.append('<div class="d-flex align-items-center gap-2 ms-3" style="border-left:2px solid var(--ioc-border);padding-left:12px"><span style="font-size:.78rem;color:var(--ioc-muted);white-space:nowrap">Rows:</span><input type="number" id="rowsPerPageInput" class="form-control form-control-sm" style="width:55px;text-align:center;border-radius:8px;padding:4px 6px;font-size:.82rem" min="1" max="200" value="'+currentRowsPerPage+'" placeholder="'+currentRowsPerPage+'"></div>');
+  $('#rowsPerPageInput').off('keydown change').on('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); applyRowsPerPage(); }
+  }).on('change', function() { applyRowsPerPage(); });
+  $('#pageInfo').text('Page '+cp+' of '+tp+' ('+tr+' records)');
+}
+
+function applyRowsPerPage() {
+  var input = $('#rowsPerPageInput'); var val = parseInt(input.val());
+  if (!val || isNaN(val) || val < 1) { showToast('Min 1 row per page!', 'warning'); input.val(1); val = 1; } 
+  else if (val > 200) { showToast('Max 200 rows per page!', 'warning'); input.val(200); val = 200; }
+  currentRowsPerPage = val; currentPage = 1;
+  showToast('Showing ' + val + ' rows per page', 'info'); loadListData(1);
+}
+
+var currentDealerPage = 1; var currentDealerRowsPerPage = 10; var dealerSearchTerm = ""; var dealerSearchTimer = null;
+
+function onDealerSearch(val) {
+  dealerSearchTerm = val || ""; clearTimeout(dealerSearchTimer);
+  dealerSearchTimer = setTimeout(function() { currentDealerPage = 1; loadDealersData(1); }, 350);
+}
+function clearDealerSearch() { $('#dealerSearchInput').val(''); dealerSearchTerm = ""; currentDealerPage = 1; loadDealersData(1); }
+function openAddDealerForm() {
+  isEditingDealer = false; switchSection('dealerForm', 'Add New Dealer', $('.sidebar-link[onclick*="dealerForm"]')[0]);
+  $('#dealerFormTitle').text('Add New Dealer'); $('#dealerSubmitBtn').html('<i class="bi bi-check-circle"></i> Save Dealer'); loadDealerForm();
+}
+
+function loadDealersData(page) {
+  currentDealerPage = page || 1;
+  $('#dealerTableBody').html('<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>');
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.error) { showToast(r.error, 'error'); return; }
+    $('#dealerCountBadge').text(r.totalRecords); currentDealerRowsPerPage = r.rowsPerPage;
+    var th = $('#dealerTableHeaders'); th.empty(); r.headers.forEach(function(h) { th.append('<th>'+h+'</th>'); }); th.append('<th>Action</th>');
+    var tb = $('#dealerTableBody'); tb.empty();
+    if (!r.data || r.data.length === 0) {
+      var msg = dealerSearchTerm ? 'No dealers match your search' : 'No dealers found';
+      tb.html('<tr><td colspan="7" class="text-center text-muted py-4">'+msg+'</td></tr>'); $('#dealerPaginationControls').empty(); $('#dealerPageInfo').text(''); return;
+    }
+    r.data.forEach(function(item) {
+      var tr = '<tr>'; item.rowData.forEach(function(val) { tr += '<td>'+val+'</td>'; });
+      tr += '<td><div class="action-btns"><button class="btn btn-view" onclick="viewDealer('+item.rowNum+')" title="View"><i class="bi bi-eye"></i></button><button class="btn btn-edit" onclick="editDealerDirect('+item.rowNum+')" title="Edit"><i class="bi bi-pencil"></i></button><button class="btn btn-del" onclick="deleteDealerRow('+item.rowNum+')" title="Delete"><i class="bi bi-trash"></i></button></div></td></tr>';
+      tb.append(tr);
+    });
+    renderDealerPagination(r.totalPages, r.currentPage, r.totalRecords);
+  }).withFailureHandler(function(e) { showToast('Load error: '+e.message, 'error'); }).getDealersListData(currentDealerPage, currentDealerRowsPerPage, dealerSearchTerm);
+}
+
+function renderDealerPagination(tp, cp, tr) {
+  var pc = $('#dealerPaginationControls'); pc.empty(); if (tp <= 0) return;
+  pc.append('<button class="page-btn" '+(cp<=1?'disabled':'')+' onclick="loadDealersData('+(cp-1)+')">‹</button>');
+  for (var i = 1; i <= tp; i++) {
+    if (i === 1 || i === tp || (i >= cp - 2 && i <= cp + 2)) { pc.append('<button class="page-btn '+(i===cp?'active-page':'')+'" onclick="loadDealersData('+i+')">'+i+'</button>'); } 
+    else if (i === cp - 3 || i === cp + 3) { pc.append('<button class="page-btn disabled">...</button>'); }
+  }
+  pc.append('<button class="page-btn" '+(cp>=tp?'disabled':'')+' onclick="loadDealersData('+(cp+1)+')">›</button>');
+  pc.append('<div class="d-flex align-items-center gap-2 ms-3 dealer-rows-box"><span style="font-size:.78rem;color:var(--ioc-muted);white-space:nowrap">Rows:</span><input type="number" id="dealerRowsPerPageInput" class="form-control form-control-sm" style="width:55px;text-align:center;border-radius:8px;padding:4px 6px;font-size:.82rem" min="1" max="500" value="'+currentDealerRowsPerPage+'" placeholder="'+currentDealerRowsPerPage+'"></div>');
+  $('#dealerRowsPerPageInput').off('keydown change').on('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); applyDealerRowsPerPage(); } }).on('change', function() { applyDealerRowsPerPage(); });
+  $('#dealerPageInfo').text('Page ' + cp + ' of ' + tp + ' (' + tr + ' records)');
+}
+
+function applyDealerRowsPerPage() {
+  var input = $('#dealerRowsPerPageInput'); var val = parseInt(input.val());
+  if (!val || isNaN(val) || val < 1) { showToast('Min 1 row per page!', 'warning'); input.val(1); val = 1; }
+  else if (val > 500) { showToast('Max 500 rows per page!', 'warning'); input.val(500); val = 500; }
+  currentDealerRowsPerPage = val; currentDealerPage = 1; showToast('Showing ' + val + ' rows per page', 'info'); loadDealersData(1);
+}
+
+function viewDealer(rowNum) {
+  currentDealerViewRow = rowNum; $('#dealerModalBody').html('<div class="text-center py-3"><div class="spinner-border text-primary"></div></div>');
+  var modalEl = document.getElementById('dealerViewModal');
+  var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl); modal.show();
+  google.script.run.withSuccessHandler(function(res) {
+    if (res.error) { $('#dealerModalBody').html('<div class="alert alert-danger">'+res.error+'</div>'); return; }
+    var html = '<div style="border-radius:12px;border:1px solid var(--ioc-border);overflow:hidden">';
+    res.headers.forEach(function(h, idx) {
+      var val = res.data[idx] || ''; if (val === "" || val === "*") return;
+      html += '<div style="display:flex;padding:8px 14px;border-bottom:1px solid var(--ioc-border)"><div style="width:40%;font-weight:600;color:var(--ioc-blue);font-size:.82rem">'+String(h).trim()+'</div><div style="width:60%;color:var(--ioc-text);font-size:.82rem">'+val+'</div></div>';
+    });
+    html += '</div>'; $('#dealerModalBody').html(html);
+  }).getDealerByRow(rowNum);
+}
+
+function editDealerDirect(rowNum) {
+  currentDealerViewRow = rowNum; switchSection('dealerForm', 'Edit Dealer Info', $('.sidebar-link[onclick*="dealerForm"]')[0]); isEditingDealer = true;
+  $('#dealerFormFields').html('<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading dealer data...</p></div>');
+  google.script.run.withSuccessHandler(function(res) {
+    if (res.error) { $('#dealerFormFields').html('<div class="alert alert-danger">'+res.error+'</div>'); return; }
+    var outletName = ""; var oIdx = fHI(res.headers, "Retail Outlet Name"); if (oIdx > -1) outletName = res.data[oIdx] || "";
+    $('#dealerFormTitle').text('Edit Dealer Info: ' + outletName); $('#dealerSubmitBtn').html('<i class="bi bi-check-circle"></i> Update Dealer');
+    google.script.run.withSuccessHandler(function(formRes) {
+      if (formRes.error) { $('#dealerFormFields').html('<div class="alert alert-danger">'+formRes.error+'</div>'); return; }
+      var html = '';
+      formRes.fields.forEach(function(f) {
+        var sid = 'c_' + f.colIdx; var req = f.required ? 'required' : ''; var star = f.required ? '<span class="text-danger">*</span>' : '';
+        var fieldLower = f.name.toLowerCase(); var isLocked = (f.type === 'srno' || fieldLower === 'retail outlet name' || fieldLower === 'ro code' || fieldLower === 'rocode' || fieldLower === 'ro no');
+        var readonlyAttr = isLocked ? 'readonly' : ''; var readonlyClass = isLocked ? 'readonly-field' : '';
+        html += '<div class="mb-3"><label class="form-label fw-semibold">' + f.label + ' ' + star + '</label>';
+        if (f.type === 'srno') { html += '<input type="text" class="form-control readonly-field" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" value="' + f.default + '" readonly>'; } 
+        else if (f.type === 'radio') {
+          html += '<div class="d-flex gap-4 mt-2">'; f.options.forEach(function(opt, idx) {
+            var rid = 'dinp_' + sid + '_' + idx; html += '<div class="form-check"><input class="form-check-input" type="radio" id="' + rid + '" name="' + f.name + '__' + f.colIdx + '" value="' + opt + '" ' + req + '><label class="form-check-label" for="' + rid + '">' + opt + '</label></div>';
+          }); html += '</div>';
+        } else if (f.type === 'password') { html += '<div class="input-group"><input type="password" class="form-control ' + readonlyClass + '" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + ' ' + readonlyAttr + '><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'dinp_' + sid + '\', this)"><i class="bi bi-eye"></i></button></div>'; } 
+        else if (f.type === 'date') { html += '<input type="date" class="form-control ' + readonlyClass + '" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + ' ' + readonlyAttr + '>'; } 
+        else { html += '<input type="text" class="form-control ' + readonlyClass + '" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + ' ' + readonlyAttr + '>'; }
+        html += '</div>';
+      });
+      $('#dealerFormFields').html(html);
+      
+      // Data Populate
+      formRes.fields.forEach(function(f) {
+        var sid = 'c_' + f.colIdx;
+        var val = (res.data[f.colIdx] !== undefined && res.data[f.colIdx] !== null) ? res.data[f.colIdx] : ''; 
+        var el = $('#dinp_' + sid);
+        if (el.length) {
+          if (el.attr('type') === 'date' && val) { el.val(dt2inp(val)); } 
+          else { el.val(val); }
+        } 
+        else { 
+          var radioEl = $('input[name="' + f.name + '__' + f.colIdx + '"][value="' + val + '"]'); 
+          if (radioEl.length) { radioEl.prop('checked', true); } 
+        }
+      });
+    }).getDealerFormStructure();
+  }).getDealerByRow(currentDealerViewRow);
+}
+
+function editDealerRowFromModal() {
+  if (!currentDealerViewRow) return;
+  var dealerModal = bootstrap.Modal.getInstance(document.getElementById('dealerViewModal')); if (dealerModal) dealerModal.hide();
+  editDealerDirect(currentDealerViewRow);
+}
+
+function deleteDealerRow(rowNum) {
+  if (confirm('Are you sure you want to delete this Dealer?')) {
+    google.script.run.withSuccessHandler(function(r) {
+      if (r.success) { showToast(r.message, 'success'); loadDealersData(currentDealerPage); } else { showToast(r.message, 'error'); }
+    }).withFailureHandler(function(e) { showToast('Error: '+e.message, 'error'); }).deleteDealerRow(rowNum);
+  }
+}
+
+function viewRow(rowNum){
+  var item=rowDataMap[rowNum]; if(!item){showToast('Data not found','warning');return;}
+  currentViewRowNum=rowNum; var headers=currentViewHeaders,row=item.rowData;
+  var mb=$('#modalBody'); mb.empty();
+  headers.forEach(function(h,idx){
+    var v=row[idx]||''; if(h==='User ID'||h==='Password')return;
+    var valHtml = (h==='Status' && v) ? '<span class="status-badge '+getSC(v)+'">'+v+'</span>' : v;
+    mb.append('<div style="display:flex;padding:8px 14px;border-bottom:1px solid var(--ioc-border)"><div style="width:40%;font-weight:600;color:var(--ioc-blue);font-size:.82rem">'+h+'</div><div style="width:60%;color:var(--ioc-text);font-size:.82rem">'+valHtml+'</div></div>');
+  });
+  var sIdx=fHI(headers,'Status'),sVal=(sIdx>-1)?(row[sIdx]||''):'';
+  $('#modalStatusBadge').attr('class','status-badge '+getSC(sVal)).text(sVal||'No Status');
+  var sus=$('#statusUpdateSelect'); sus.empty().append('<option value="">Change Status</option>');
+  (dashboardData.statusOptions||['Open','In Progress','Resolved','Closed']).forEach(function(s){sus.append('<option value="'+s+'">'+s+'</option>');});
+  var outletName='',complentDetail='';
+  var oIdx=fHI(headers,'Retail Outlet Name'),dIdx=fHI(headers,'DU Complent Detail');
+  if(oIdx>-1)outletName=row[oIdx]||''; if(dIdx>-1)complentDetail=row[dIdx]||'';
+  var waMsg='IOC Complaint Update:\nOutlet: '+outletName+'\n';
+  if(complentDetail)waMsg+='Detail: '+complentDetail+'\n'; if(sVal)waMsg+='Status: '+sVal;
+  $('#whatsappMsg').val(waMsg);
+  if(outletName){
+    $('#modalDealerBody').html('<div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm"></div> Loading...</div>');
+    google.script.run.withSuccessHandler(function(dd){
+      if(dd.error){$('#modalDealerBody').html('<div class="text-center py-3 text-muted">'+dd.error+'</div>');return;}
+      var db=$('#modalDealerBody'); db.empty();
+      dd.headers.forEach(function(h,idx){
+        var v=dd.data[idx]||'';
+        db.append('<div style="display:flex;padding:8px 14px;border-bottom:1px solid var(--ioc-border)"><div style="width:40%;font-weight:600;color:var(--ioc-blue);font-size:.82rem">'+String(h).trim()+'</div><div style="width:60%;color:var(--ioc-text);font-size:.82rem">'+v+'</div></div>');
+      });
+      var phoneIdx=fHI(dd.headers.map(function(h){return h?String(h).trim():'';}),'Mobile');
+      if(phoneIdx>-1&&dd.data[phoneIdx]){var mob=String(dd.data[phoneIdx]).replace(/\D/g,'');if(mob.length>=10)$('#whatsappMobile').val(mob.slice(-10));}
+      checkWABtn();
+    }).withFailureHandler(function(e){$('#modalDealerBody').html('<div class="text-center text-danger">Error: '+e.message+'</div>');}).getDealerDetails(outletName);
+  }else{$('#modalDealerBody').html('<div class="text-center py-3 text-muted">No outlet name found</div>');}
+  var modalEl = document.getElementById('viewModal');
+  var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+function checkWABtn(){var mob=$('#whatsappMobile').val()||'',clean=mob.replace(/\D/g,'');$('#btnSendWhatsApp').prop('disabled',clean.length!==10);}
+function sendWhatsApp(){var mob=$('#whatsappMobile').val().replace(/\D/g,''),msg=$('#whatsappMsg').val()||'';if(mob.length!==10){showToast('Enter valid 10-digit number','warning');return;}window.open('https://wa.me/91'+mob+'?text='+encodeURIComponent(msg),'_blank');showToast('WhatsApp opened!','success');}
+function updateStatusFromModal(){var newStatus=$('#statusUpdateSelect').val();if(!newStatus||!currentViewRowNum){showToast('Select a status first','warning');return;}google.script.run.withSuccessHandler(function(r){if(r.success){showToast(r.message,'success');closeModal();loadDashboard();loadListData(currentPage);}else showToast(r.message,'error');}).updateComplaintStatus(currentViewRowNum,newStatus);}
+function editFromModal(){if(currentViewRowNum){closeModal();editRow(currentViewRowNum);}}
+function editComplaintFromModal() { if(currentViewRowNum) { closeModal(); editRow(currentViewRowNum); } }
+
+function editDealerFromModal() {
+  if(!currentViewRowNum) return; var item = rowDataMap[currentViewRowNum]; if(!item) return;
+  var oIdx = fHI(currentViewHeaders, 'Retail Outlet Name');
+  if(oIdx === -1) { showToast('Outlet Name not found in data', 'error'); return; }
+  var outletName = item.rowData[oIdx]; closeModal();
+  switchSection('dealerForm', 'Edit Dealer Info', $('.sidebar-link[onclick*="dealerForm"]')[0]);
+  isEditingDealer = true; $('#dealerFormTitle').text('Edit Dealer Info: ' + outletName); $('#dealerSubmitBtn').html('<i class="bi bi-check-circle"></i> Update Dealer');
+  $('#dealerFormFields').html('<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading dealer data...</p></div>');
+  google.script.run.withSuccessHandler(function(res) {
+    if(res.error) { $('#dealerFormFields').html('<div class="alert alert-danger">'+res.error+'</div>'); return; }
+    google.script.run.withSuccessHandler(function(formRes) {
+      if(formRes.error) { $('#dealerFormFields').html('<div class="alert alert-danger">'+formRes.error+'</div>'); return; }
+      var html = '';
+      formRes.fields.forEach(function(f) {
+        var sid = 'c_' + f.colIdx; var req = f.required ? 'required' : ''; var star = f.required ? '<span class="text-danger">*</span>' : '';
+        var fieldLower = f.name.toLowerCase(); var isLocked = (f.type === 'srno' || fieldLower === 'retail outlet name' || fieldLower === 'ro code' || fieldLower === 'rocode' || fieldLower === 'ro no');
+        var readonlyAttr = isLocked ? 'readonly' : ''; var readonlyClass = isLocked ? 'readonly-field' : '';
+        html += '<div class="mb-3"><label class="form-label fw-semibold">' + f.label + ' ' + star + '</label>';
+        if (f.type === 'srno') { html += '<input type="text" class="form-control readonly-field" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" value="' + f.default + '" readonly>'; } 
+        else if (f.type === 'radio') {
+          html += '<div class="d-flex gap-4 mt-2">'; f.options.forEach(function(opt, idx) {
+            var rid = 'dinp_' + sid + '_' + idx; html += '<div class="form-check"><input class="form-check-input" type="radio" id="' + rid + '" name="' + f.name + '__' + f.colIdx + '" value="' + opt + '" ' + req + '><label class="form-check-label" for="' + rid + '">' + opt + '</label></div>';
+          }); html += '</div>';
+        } else if (f.type === 'password') { html += '<div class="input-group"><input type="password" class="form-control ' + readonlyClass + '" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + ' ' + readonlyAttr + '><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'dinp_' + sid + '\', this)"><i class="bi bi-eye"></i></button></div>'; } 
+        else if (f.type === 'date') { html += '<input type="date" class="form-control ' + readonlyClass + '" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + ' ' + readonlyAttr + '>'; } 
+        else { html += '<input type="text" class="form-control ' + readonlyClass + '" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + ' ' + readonlyAttr + '>'; }
+        html += '</div>';
+      });
+      $('#dealerFormFields').html(html);
+      
+      // Data Populate
+      formRes.fields.forEach(function(f) {
+        var sid = 'c_' + f.colIdx;
+        var val = (res.data[f.colIdx] !== undefined && res.data[f.colIdx] !== null) ? res.data[f.colIdx] : ''; 
+        var el = $('#dinp_' + sid);
+        if(el.length) {
+          if (el.attr('type') === 'date' && val) { el.val(dt2inp(val)); } 
+          else { el.val(val); }
+        } 
+        else { 
+          var radioEl = $('input[name="' + f.name + '__' + f.colIdx + '"][value="' + val + '"]'); 
+          if (radioEl.length) { radioEl.prop('checked', true); } 
+        }
+      });
+    }).getDealerFormStructure();
+  }).getDealerDetails(outletName);
+}
+
+function deleteFromModal(){if(currentViewRowNum){closeModal();deleteRow(currentViewRowNum);}}
+function closeModal(){var m=document.getElementById('viewModal'),b=bootstrap.Modal.getInstance(m);if(b)b.hide();}
+function applyFilters(){loadListData(1);}
+
+function loadDealerForm() {
+  $('#dealerFormFields').html('<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading form...</p></div>');
+  google.script.run.withSuccessHandler(function(res) {
+    if (res.error) { $('#dealerFormFields').html('<div class="alert alert-danger">'+res.error+'</div>'); return; }
+    var html = '';
+    res.fields.forEach(function(f) {
+      var sid = 'c_' + f.colIdx; var req = f.required ? 'required' : ''; var star = f.required ? '<span class="text-danger">*</span>' : '';
+      html += '<div class="mb-3"><label class="form-label fw-semibold">' + f.label + ' ' + star + '</label>';
+      if (f.type === 'srno') { html += '<input type="text" class="form-control readonly-field" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" value="' + (f.default || '') + '" readonly>'; } 
+      else if (f.type === 'radio') {
+        html += '<div class="d-flex gap-4 mt-2">'; f.options.forEach(function(opt, idx) {
+          var rid = 'dinp_' + sid + '_' + idx; var checked = (idx === 0) ? 'checked' : '';
+          html += '<div class="form-check"><input class="form-check-input" type="radio" id="' + rid + '" name="' + f.name + '__' + f.colIdx + '" value="' + opt + '" ' + checked + ' ' + req + '><label class="form-check-label" for="' + rid + '">' + opt + '</label></div>';
+        }); html += '</div>';
+      } else if (f.type === 'password') { html += '<div class="input-group"><input type="password" class="form-control" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + '><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'dinp_' + sid + '\', this)"><i class="bi bi-eye"></i></button></div>'; } 
+      else { html += '<input type="' + f.type + '" class="form-control" id="dinp_' + sid + '" name="' + f.name + '__' + f.colIdx + '" ' + req + '>'; }
+      html += '</div>';
+    });
+    $('#dealerFormFields').html(html);
+  }).withFailureHandler(function(e) { $('#dealerFormFields').html('<div class="alert alert-danger">Error: ' + e.message + '</div>'); }).getDealerFormStructure();
+}
+
+function submitDealerForm() {
+  var fd = {}; var hasErr = false;
+  $('#dealerForm input').each(function() {
+    var el = $(this), name = el.attr('name'); if (!name) return;
+    var type = el.attr('type');
+    if (type === 'radio') {
+      if (el.is(':checked')) { fd[name] = el.val(); }
+    } else {
+      var val = el.val() ? el.val().trim() : '';
+      if (el.prop('required') && !val) { el.addClass('is-invalid'); hasErr = true; } 
+      else { el.removeClass('is-invalid'); }
+      fd[name] = val;
+    }
+  });
+  var radioReq = {};
+  $('#dealerForm input[type="radio"][required]').each(function() { radioReq[$(this).attr('name')] = true; });
+  for (var name in radioReq) { if (!fd[name]) { hasErr = true; break; } }
+  
+  if (hasErr) { showToast('Please fill all required fields!', 'error'); return; }
+  var btn = $('#dealerSubmitBtn'); btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+
+  var redirectToDealers = function() {
+    isEditingDealer = false;
+    var dealerLink = Array.from(document.querySelectorAll('.sidebar-link')).find(el => el.textContent.trim() === 'Dealers');
+    if(dealerLink) dealerLink.click();
+  };
+
+  if (isEditingDealer) {
+    google.script.run.withSuccessHandler(function(r) {
+      btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> Update Dealer');
+      if (r.success) {
+        showToast(r.message, 'success'); 
+        $('#dealerStatusMsg').removeClass('d-none alert-danger').addClass('alert-success').html('<i class="bi bi-check-circle-fill"></i> ' + r.message); 
+        redirectToDealers();
+      } else { 
+        showToast(r.message, 'error'); 
+        $('#dealerStatusMsg').removeClass('d-none alert-success').addClass('alert-danger').html('<i class="bi bi-exclamation-circle-fill"></i> ' + r.message); 
+      }
+    }).withFailureHandler(function(err) { 
+      btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> Update Dealer'); 
+      showToast('Error: ' + err.message, 'error'); 
+    }).updateDealerInfo(fd);
+  } else {
+    google.script.run.withSuccessHandler(function(r) {
+      btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> Save Dealer');
+      if (r.success) {
+        showToast(r.message, 'success'); 
+        $('#dealerStatusMsg').removeClass('d-none alert-danger').addClass('alert-success').html('<i class="bi bi-check-circle-fill"></i> ' + r.message); 
+        redirectToDealers();
+      } else { 
+        showToast(r.message, 'error'); 
+        $('#dealerStatusMsg').removeClass('d-none alert-success').addClass('alert-danger').html('<i class="bi bi-exclamation-circle-fill"></i> ' + r.message); 
+      }
+    }).withFailureHandler(function(err) { 
+      btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> Save Dealer'); 
+      showToast('Error: ' + err.message, 'error'); 
+    }).addNewDealer(fd);
+  }
+}
+
+function resetDealerForm() {
+  isEditingDealer = false; $('#dealerStatusMsg').addClass('d-none'); $('#dealerFormTitle').text('Add New Dealer'); $('#pageTitle').text('Add New Dealer'); $('#dealerSubmitBtn').html('<i class="bi bi-check-circle"></i> Save Dealer'); loadDealerForm(); 
+}
+
+function exportTableCSV(){
+  google.script.run.withSuccessHandler(function(r){
+    if(!r.data||!r.data.length){showToast('No data to export','warning');return;}
+    var csv=r.headers.map(function(h){return '"'+String(h).replace(/"/g,'""')+'"';}).join(',')+'\n';
+    r.data.forEach(function(row){csv+=row.map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',')+'\n';});
+    var blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='IOC_Complaints.csv';a.click();URL.revokeObjectURL(url);
+    showToast('CSV exported!','success');
+  }).exportAllComplaints();
+}
+</script>
 </body>
 </html>
