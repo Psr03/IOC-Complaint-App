@@ -74,8 +74,11 @@ function renderForm(fields){
       if(dv==='*')dv='';
       h+='<div class="mb-3"><label class="form-label fw-semibold">'+f.label+' '+star+'</label>';
       if(f.type==='autofill'){
-        if(f.label.toLowerCase().indexOf('password')>-1){h+='<div class="input-group"><input type="password" class="form-control" id="inp_'+sid+'" name="'+f.name+'" '+req+'><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'inp_'+sid+'\',this)"><i class="bi bi-eye"></i></button></div>';}'
-        else{h+='<input type="text" class="form-control readonly-field" id="inp_'+sid+'" name="'+f.name+'" readonly '+req+'>';}
+        if(f.label.toLowerCase().indexOf('password')>-1){
+          h+='<div class="input-group"><input type="password" class="form-control" id="inp_'+sid+'" name="'+f.name+'" '+req+'><button class="btn btn-outline-secondary" type="button" onclick="togglePwd(\'inp_'+sid+'\',this)"><i class="bi bi-eye"></i></button></div>';
+        } else {
+          h+='<input type="text" class="form-control readonly-field" id="inp_'+sid+'" name="'+f.name+'" readonly '+req+'>';
+        }
       }
       else if(f.type==='srno'){h+='<input type="text" class="form-control readonly-field" id="inp_'+sid+'" name="'+f.name+'" value="'+dv+'" readonly>';}
       else if(f.type==='date'){h+='<input type="date" class="form-control" id="inp_'+sid+'" name="'+f.name+'" value="'+dv+'" '+req+'>';}
