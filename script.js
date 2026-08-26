@@ -1,63 +1,68 @@
-// ⬇️ Yahan apna NAYA Web App URL paste karein
-const API_URL = "https://script.google.com/macros/s/AKfycby4KI5aRpxSaHfAH_55_BEyV21yNdtgRvxmfZd2o60xurNF_SzKtzG7u0UlvgE0yHkd/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby4KI5aRpxSaHfAH_55_BEyV21yNdtgRvxmfZd2o60xurNF_SzKtzG7u0UlvgE0yHkd/exec"; 
 
 document.addEventListener('DOMContentLoaded', function() {
     loadComplaints();
     
     // Form Submit Logic
     const form = document.getElementById('complaintForm');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.innerText = "Saving...";
-        submitBtn.disabled = true;
-        
-        // Data collect karein
-        const formData = {
-            "Retail Outlet Name": document.getElementById('outletName').value,
-            "DU Complent Detail": document.getElementById('complaintDetail').value,
-            "Status": document.getElementById('status').value
-        };
-        
-        // Google Sheet mein bhejein
-        fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify(formData),
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(result => {
-            if(result.status === 'success') {
-                alert("Complaint added successfully!");
-                form.reset(); // Form khali karein
-                loadComplaints(); // List refresh karein
-            } else {
-                alert("Error: " + result.message);
-            }
-            submitBtn.innerText = "Submit Complaint";
-            submitBtn.disabled = false;
-        })
-        .catch(error => {
-            alert("Connection failed!");
-            submitBtn.innerText = "Submit Complaint";
-            submitBtn.disabled = false;
-        });
-    });
+    if(form) {
+      form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.innerText = "Saving...";
+          submitBtn.disabled = true;
+          
+          const formData = {
+              "Retail Outlet Name": document.getElementById('outletName').value,
+              "DU Complent Detail": document.getElementById('complaintDetail').value,
+              "Status": document.getElementById('status').value
+          };
+          
+          fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify(formData),
+              headers: { 'Content-Type': 'application/json' }
+          })
+          .then(response => response.json())
+          .then(result => {
+              if(result.status === 'success') {
+                  alert("Complaint added successfully!");
+                  form.reset();
+                  loadComplaints();
+              } else {
+                  alert("Error: " + result.message);
+              }
+              submitBtn.innerText = "Submit Complaint";
+              submitBtn.disabled = false;
+          })
+          .catch(error => {
+              alert("Connection failed! Check console for details.");
+              submitBtn.innerText = "Submit Complaint";
+              submitBtn.disabled = false;
+          });
+      });
+    }
 });
 
-// Complaints Load karne ka function
 function loadComplaints() {
     const listContainer = document.getElementById('complaint-list');
+    if(!listContainer) return;
+    
     listContainer.innerText = "Loading complaints...";
     
     fetch(API_URL)
-      .then(response => response.json())
+      .then(response => {
+          if (!response.ok) {
+              throw new Error('Network response was not ok');
+          }
+          return response.json();
+      })
       .then(result => {
           if (result.data && result.data.length > 0) {
               let html = '';
-              // Headers ka index dhoondhein
-              let hIdx = {}, hLower = result.headers.map(h => String(h).trim().toLowerCase());
+              let hIdx = {};
+              let hLower = result.headers.map(h => String(h).trim().toLowerCase());
               hLower.forEach((h, i) => hIdx[h] = i);
               
               let idxOutlet = hIdx['retail outlet name'] !== undefined ? hIdx['retail outlet name'] : 1;
@@ -86,6 +91,8 @@ function loadComplaints() {
           }
       })
       .catch(error => {
-          listContainer.innerText = "Connection failed!";
+          // Ye error exact batayega ki problem kya hai
+          listContainer.innerHTML = "<p style='color:red;'>Error loading data: " + error.message + "</p>";
+          console.error("Detailed Error:", error);
       });
 }
